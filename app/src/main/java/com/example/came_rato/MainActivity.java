@@ -96,9 +96,11 @@ public class MainActivity extends AppCompatActivity {
 
     public Bitmap
     cell_shade_image(Uri image) throws IOException
-        /* Tries to cel shade an image. The cel shading function is dividing and multiplying
-         * by 5. I can't think of a better one as of this moment.
-         */
+        /* Tries to cel shade an image. The cel shading function is dividing by 4 then using the
+        value to index into the colors[] array. Then each pixel will take on the value of the 
+        most prominent pixel color, in other words, the color that has obtained a plurality in
+        the 11x11 pixel space around the center pixel.
+        */
     {
         Bitmap bitmap = getBitmapFromUri(image);
         bitmap = bitmap.copy(ARGB_8888, true);
@@ -177,7 +179,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void
     write_to_memory(Bitmap t_bitmap, String t_name) throws IOException
-        /* Writes a bitmap to external storage. */
+        /* Writes a bitmap to external storage. External storage is defined by the
+        OS itself, and adds a directory called 'cel_image' to the default storage
+        location.
+        */
     {
         String path = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES).toString();
@@ -195,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
         output_stream.close();
 
         Toast.makeText(getApplicationContext(), "Image written to: "
-                + path, Toast.LENGTH_SHORT).show();
+                + path + "/cel_image", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -204,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == Activity.RESULT_OK) {
             switch (requestCode) {
+
                 case GALLERY_REQUEST:
                     if (data != null) {
                         Uri selected_image = data.getData();
