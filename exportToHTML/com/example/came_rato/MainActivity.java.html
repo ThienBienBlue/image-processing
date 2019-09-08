@@ -1,0 +1,256 @@
+<html>
+<head>
+<title>MainActivity.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #000080; font-weight: bold;}
+.s1 { color: #000000;}
+.s2 { color: #0000ff;}
+.s3 { color: #808080; font-style: italic;}
+.s4 { color: #008000; font-weight: bold;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MainActivity.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span>com.example.came_rato;
+
+<span class="s0">import </span>androidx.appcompat.app.AppCompatActivity;
+
+<span class="s0">import </span>android.app.Activity;
+<span class="s0">import </span>android.content.Intent;
+<span class="s0">import </span>android.graphics.Bitmap;
+<span class="s0">import </span>android.graphics.BitmapFactory;
+<span class="s0">import </span>android.net.Uri;
+<span class="s0">import </span>android.os.Bundle;
+<span class="s0">import </span>android.os.ParcelFileDescriptor;
+<span class="s0">import </span>android.provider.MediaStore;
+<span class="s0">import </span>android.util.Log;
+<span class="s0">import </span>android.view.View;
+<span class="s0">import </span>android.widget.Button;
+<span class="s0">import </span>android.widget.ImageView;
+
+<span class="s0">import </span>java.io.File;
+<span class="s0">import </span>java.io.FileDescriptor;
+<span class="s0">import </span>java.io.IOException;
+<span class="s0">import </span>java.net.URI;
+
+<span class="s0">import static </span>android.graphics.Bitmap.Config.ARGB_8888;
+<span class="s0">import static </span>android.graphics.Color.alpha;
+<span class="s0">import static </span>android.graphics.Color.argb;
+<span class="s0">import static </span>android.graphics.Color.blue;
+<span class="s0">import static </span>android.graphics.Color.green;
+<span class="s0">import static </span>android.graphics.Color.red;
+
+<span class="s0">public class </span>MainActivity <span class="s0">extends </span>AppCompatActivity {
+
+    ImageView m_picture;
+    Button m_button;
+    <span class="s0">private static final int </span>GALLERY_REQUEST = <span class="s2">69</span>;
+    <span class="s0">int </span>colors[] = {<span class="s2">32</span>, <span class="s2">96</span>, <span class="s2">160</span>, <span class="s2">224</span>};
+
+    @Override
+    <span class="s0">protected void </span>onCreate(Bundle savedInstanceState) {
+        <span class="s0">super</span>.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        m_picture = findViewById(R.id.imageView_picture);
+        m_button = findViewById(R.id.load_image_button);
+
+        m_button.setOnClickListener(<span class="s0">new </span>View.OnClickListener() {
+            @Override
+            <span class="s0">public void </span>onClick(View view) {
+                load_image_from_gallery();
+            }
+        });
+    }
+
+    <span class="s0">private void</span>
+    load_image_from_gallery()
+        <span class="s3">/* Loads an image from the gallery to the app. */</span>
+    {
+        Intent photo_picker_intent = <span class="s0">new </span>Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        startActivityForResult(photo_picker_intent, GALLERY_REQUEST);
+    }
+
+    <span class="s0">private </span>Bitmap
+    getBitmapFromUri(Uri uri) <span class="s0">throws </span>IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(uri, <span class="s4">&quot;r&quot;</span>);
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+        parcelFileDescriptor.close();
+        <span class="s0">return </span>image;
+    }
+
+    <span class="s0">public int</span>
+    min(<span class="s0">int </span>a, <span class="s0">int </span>b) {
+        <span class="s0">if </span>(a &lt; b) {
+            <span class="s0">return </span>a;
+        }
+        <span class="s0">return </span>b;
+    }
+
+    <span class="s0">public int</span>
+    max(<span class="s0">int </span>a, <span class="s0">int </span>b) {
+        <span class="s0">if </span>(a &gt; b) {
+            <span class="s0">return </span>a;
+        }
+        <span class="s0">return </span>b;
+    }
+
+    <span class="s0">public </span>Bitmap
+    cell_shade_image(Uri image) <span class="s0">throws </span>IOException
+        <span class="s3">/* Tries to cel shade an image. The cel shading function is dividing and multiplying 
+         * by 5. I can't think of a better one as of this moment. 
+         */</span>
+    {
+        Bitmap bitmap = getBitmapFromUri(image);
+        bitmap = bitmap.copy(ARGB_8888, <span class="s0">true</span>);
+
+        <span class="s3">//* Create a bitmap from the original that only uses 256 colors.</span>
+        <span class="s0">int </span>height = bitmap.getHeight();
+        <span class="s0">int </span>width = bitmap.getWidth();
+        <span class="s0">for </span>(<span class="s0">int </span>i = <span class="s2">0</span>; i &lt; height; i++) {
+            <span class="s0">for </span>(<span class="s0">int </span>j = <span class="s2">0</span>; j &lt; width; j++) {
+                <span class="s0">int </span>color = bitmap.getPixel(j, i);
+                <span class="s0">int </span>RGB_alpha = colors[alpha(color) / <span class="s2">64</span>];
+                <span class="s0">int </span>RGB_red = colors[red(color) / <span class="s2">64</span>];
+                <span class="s0">int </span>RGB_green = colors[green(color) / <span class="s2">64</span>];
+                <span class="s0">int </span>RGB_blue = colors[blue(color) / <span class="s2">64</span>];
+                color = argb(RGB_alpha, RGB_red, RGB_green, RGB_blue);
+                bitmap.setPixel(j, i, color);
+            }
+        }
+
+        <span class="s0">int </span>r_height = <span class="s2">5</span>;
+        <span class="s0">int </span>r_width = <span class="s2">5</span>;
+        Bitmap bitmap2 = Bitmap.createBitmap(width, height, ARGB_8888);
+
+        <span class="s3">/* Prominence Algorithm. 
+        for (int y = 0; y &lt; height; y++) { 
+            for (int x = 0; x &lt; width; x++) { 
+                int prominent_color[][][][] = new int[4][4][4][4]; 
+                int a = 0; 
+                int r = 0; 
+                int g = 0; 
+                int b = 0; 
+                int max_count = 0; 
+ 
+                for (int yy = max(0, y - r_height), y_max = min(height, y + r_height + 1); 
+                     yy &lt; y_max; 
+                     yy++) 
+                { 
+                    for (int xx = max(0, x - r_width), x_max = min(width, x + r_width + 1); 
+                         xx &lt; x_max; 
+                         xx++) 
+                    { 
+                        int tile_color = bitmap.getPixel(xx, yy); 
+                        int tile_alpha = alpha(tile_color) / 64; 
+                        int tile_red = red(tile_color) / 64; 
+                        int tile_green = green(tile_color) / 64; 
+                        int tile_blue = blue(tile_color) / 64; 
+ 
+                        int count = prominent_color[tile_alpha][tile_red] 
+                                [tile_green][tile_blue]; 
+                        count++; 
+                        if (count &gt; max_count) { 
+                            max_count = count; 
+                            a = tile_alpha; 
+                            r = tile_red; 
+                            g = tile_green; 
+                            b = tile_blue; 
+                        } 
+                        prominent_color[tile_alpha][tile_red] 
+                            [tile_green][tile_blue] = count; 
+                    } 
+                } 
+ 
+                int blended_color = argb(colors[a], colors[r], 
+                        colors[g], colors[b]); 
+                bitmap2.setPixel(x, y, blended_color); 
+            } 
+        } //*/</span>
+
+        //* Prominence Algorithm with a heap.
+        <span class="s0">for </span>(<span class="s0">int </span>y = <span class="s2">0</span>; y &lt; height; y++) {
+            ColorHeap color_heap = <span class="s0">new </span>ColorHeap(<span class="s2">121</span>);
+
+            <span class="s0">for </span>(<span class="s0">int </span>yy = max(<span class="s2">0</span>, y - r_height), y_max = min(height, y + r_height + <span class="s2">1</span>);
+                 yy &lt; y_max;
+                 yy++)
+            {
+                <span class="s0">for </span>(<span class="s0">int </span>xx = <span class="s2">0</span>, x_max = min(width, r_width + <span class="s2">1</span>);
+                     xx &lt; x_max;
+                     xx++)
+                {
+                    <span class="s0">int </span>tile_color = bitmap.getPixel(xx, yy);
+                    color_heap.increment_color(tile_color);
+                }
+            }
+
+            bitmap2.setPixel(<span class="s2">0</span>, y, color_heap.get_max());
+
+            <span class="s0">for </span>(<span class="s0">int </span>x = <span class="s2">1</span>; x &lt; width; x++) {
+
+
+                <span class="s3">// Remove the leftmost col from the matrix.</span>
+                <span class="s0">int </span>col = x - r_width - <span class="s2">1</span>;
+                <span class="s0">if </span>(col &gt;= <span class="s2">0</span>) {
+                    <span class="s0">for </span>(<span class="s0">int </span>yy = max(<span class="s2">0</span>, y - r_height), y_max = min(height, y + r_height + <span class="s2">1</span>);
+                         yy &lt; y_max;
+                         yy++)
+                    {
+                        <span class="s0">int </span>tile_color = bitmap.getPixel(col, yy);
+                        color_heap.decrement_color(tile_color);
+                    }
+                }
+
+                <span class="s3">// Insert the rightmost col from the matrix.</span>
+                col = x + r_width;
+                <span class="s0">if </span>(col &lt; width) {
+                    <span class="s0">for </span>(<span class="s0">int </span>yy = max(<span class="s2">0</span>, y - r_height), y_max = min(height, y + r_height + <span class="s2">1</span>);
+                         yy &lt; y_max;
+                         yy++)
+                    {
+                        <span class="s0">int </span>tile_color = bitmap.getPixel(col, yy);
+                        color_heap.increment_color(tile_color);
+                    }
+                }
+
+                bitmap2.setPixel(x, y, color_heap.get_max());
+            }
+        }
+
+        <span class="s0">return </span>bitmap2;
+    }
+
+    @Override
+    <span class="s0">public void</span>
+    onActivityResult(<span class="s0">int </span>requestCode, <span class="s0">int </span>resultCode, Intent data) {
+        <span class="s0">super</span>.onActivityResult(requestCode, resultCode, data);
+        <span class="s0">if</span>(resultCode == Activity.RESULT_OK) {
+            <span class="s0">switch </span>(requestCode) {
+                <span class="s0">case </span>GALLERY_REQUEST:
+                    <span class="s0">if </span>(data != <span class="s0">null</span>) {
+                        Uri selected_image = data.getData();
+                        Bitmap bitmap = <span class="s0">null</span>;
+                        <span class="s0">try </span>{
+                            bitmap = cell_shade_image(selected_image);
+                            m_picture.setImageBitmap(bitmap);
+                        } <span class="s0">catch </span>(IOException e) {
+                            e.printStackTrace();
+                        }
+                        <span class="s0">break</span>;
+                    }
+            }
+        }
+    }
+}
+
+</pre>
+</body>
+</html>

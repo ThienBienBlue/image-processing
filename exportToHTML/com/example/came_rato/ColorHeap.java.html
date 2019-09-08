@@ -1,0 +1,190 @@
+<html>
+<head>
+<title>ColorHeap.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #000080; font-weight: bold;}
+.s1 { color: #000000;}
+.s2 { color: #808080; font-style: italic;}
+.s3 { color: #0000ff;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ColorHeap.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span>com.example.came_rato;
+
+<span class="s0">import </span>android.graphics.Color;
+
+<span class="s0">import static </span>android.graphics.Color.alpha;
+<span class="s0">import static </span>android.graphics.Color.blue;
+<span class="s0">import static </span>android.graphics.Color.green;
+<span class="s0">import static </span>android.graphics.Color.red;
+<span class="s0">import static </span>java.lang.Math.min;
+
+<span class="s0">public class </span>ColorHeap {
+
+    <span class="s0">public class </span>ColorCount {
+        <span class="s0">int </span>m_count;
+        <span class="s0">int </span>m_color;
+
+        <span class="s0">public</span>
+        ColorCount(<span class="s0">int </span>t_color, <span class="s0">int </span>t_count) {
+            <span class="s0">this</span>.m_color = t_color;
+            <span class="s0">this</span>.m_count = t_count;
+        }
+    }
+
+    ColorCount m_color_heap[];
+    <span class="s0">int </span>m_hash[][][][];
+    <span class="s0">int </span>m_count;
+    <span class="s0">int </span>m_size;
+
+    <span class="s2">//-----------------------</span>
+    // Heap Implementation.
+    //-----------------------
+
+    <span class="s0">public</span>
+    ColorHeap(<span class="s0">int </span>t_size) {
+        <span class="s0">this</span>.m_count = <span class="s3">0</span>;
+        <span class="s0">this</span>.m_size = min(t_size, <span class="s3">256</span>);
+        <span class="s0">this</span>.m_color_heap = <span class="s0">new </span>ColorCount[<span class="s0">this</span>.m_size];
+        <span class="s0">this</span>.m_hash = <span class="s0">new int</span>[<span class="s3">4</span>][<span class="s3">4</span>][<span class="s3">4</span>][<span class="s3">4</span>];
+    }
+
+    <span class="s0">public int</span>
+    get_max()
+        <span class="s2">/* Returns the color that achieved a plurality. */</span>
+    {
+        <span class="s0">if </span>(m_size &gt; <span class="s3">0</span>) {
+            <span class="s0">return </span>m_color_heap[<span class="s3">0</span>].m_color;
+        }
+        <span class="s0">return </span>-<span class="s3">1</span>;
+    }
+
+    <span class="s0">public int</span>
+    parent(<span class="s0">int </span>i) { <span class="s0">return </span>(i-<span class="s3">1</span>)/<span class="s3">2</span>; }
+
+    <span class="s0">public int</span>
+    left(<span class="s0">int </span>i) { <span class="s0">return </span>(<span class="s3">2</span>*i + <span class="s3">1</span>); }
+
+    <span class="s0">public int</span>
+    right(<span class="s0">int </span>i) { <span class="s0">return </span>(<span class="s3">2</span>*i + <span class="s3">2</span>); }
+
+    <span class="s0">public void</span>
+    increment_color(<span class="s0">int </span>t_color)
+        <span class="s2">/* Increments the count of a color in the heap. */</span>
+    {
+        <span class="s0">int </span>index = read_hash(t_color);
+        <span class="s0">if </span>(index &gt;= <span class="s3">0</span>) {
+            m_color_heap[index].m_count++;
+
+            <span class="s0">while </span>(index &gt; <span class="s3">0</span>
+                    &amp;&amp; m_color_heap[parent(index)].m_count &lt; m_color_heap[index].m_count)
+            {
+                swap(index, parent(index));
+                index = parent(index);
+            }
+        }
+        <span class="s0">else </span>{
+            write_hash(t_color, m_count);
+            m_color_heap[m_count] = <span class="s0">new </span>ColorCount(t_color, <span class="s3">1</span>);
+            m_count++;
+        }
+    }
+
+    <span class="s0">public void</span>
+    decrement_color(<span class="s0">int </span>t_color) {
+        <span class="s0">int </span>index = read_hash(t_color);
+        <span class="s0">if </span>(index &gt;= <span class="s3">0</span>) {
+            m_color_heap[index].m_count--;
+            <span class="s0">while</span>(max_child(index) &gt;= <span class="s3">0</span>
+                   &amp;&amp; m_color_heap[index].m_count &lt; m_color_heap[max_child(index)].m_count)
+            {
+                swap(index, max_child(index));
+                index = max_child(index);
+            }
+        }
+    }
+
+    <span class="s2">//--------------------</span>
+    // Helper Functions.
+    //--------------------
+
+    <span class="s0">public int</span>
+    read_hash(<span class="s0">int </span>t_color)
+        <span class="s2">/* Returns the index of a color in the heap. */</span>
+    {
+        <span class="s0">int </span>c_alpha = alpha(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_red = red(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_green = green(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_blue = blue(t_color) / <span class="s3">64</span>;
+
+        <span class="s0">int </span>index = m_hash[c_alpha][c_red][c_green][c_blue];
+        <span class="s0">if </span>(index &lt; m_count &amp;&amp; m_color_heap[index].m_color == t_color) {
+            <span class="s0">return </span>index;
+        }
+        <span class="s0">return </span>-<span class="s3">1</span>;
+    }
+
+    <span class="s0">public void</span>
+    write_hash(<span class="s0">int </span>t_color, <span class="s0">int </span>t_index) {
+        <span class="s0">int </span>c_alpha = alpha(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_red = red(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_green = green(t_color) / <span class="s3">64</span>;
+        <span class="s0">int </span>c_blue = blue(t_color) / <span class="s3">64</span>;
+        m_hash[c_alpha][c_red][c_green][c_blue] = t_index;
+    }
+
+    <span class="s0">public void</span>
+    swap(<span class="s0">int </span>t_a, <span class="s0">int </span>t_b) {
+        <span class="s0">if </span>(t_a != t_b) {
+            swap_index(m_color_heap[t_a].m_color, m_color_heap[t_b].m_color);
+
+            ColorCount a = m_color_heap[t_a];
+            m_color_heap[t_a] = m_color_heap[t_b];
+            m_color_heap[t_b] = a;
+        }
+    }
+
+    <span class="s0">public void</span>
+    swap_index(<span class="s0">int </span>t_color_a, <span class="s0">int </span>t_color_b) {
+        <span class="s0">if </span>(t_color_a != t_color_b) {
+            <span class="s0">int </span>index_a = read_hash(t_color_a);
+            <span class="s0">int </span>index_b = read_hash(t_color_b);
+
+            write_hash(t_color_a, index_b);
+            write_hash(t_color_b, index_a);
+        }
+    }
+
+    <span class="s0">public int</span>
+    max_child(<span class="s0">int </span>t_parent_index)
+        <span class="s2">/* Returns the index of the child with the larger count. */</span>
+    {
+        <span class="s0">int </span>left_child = left(t_parent_index);
+        <span class="s0">int </span>right_child = right(t_parent_index);
+
+        <span class="s0">if </span>(left_child &lt; <span class="s0">this</span>.m_count &amp;&amp; right_child &lt; <span class="s0">this</span>.m_count) {
+            <span class="s0">int </span>count_left = m_color_heap[left_child].m_count;
+            <span class="s0">int </span>count_right = m_color_heap[right_child].m_count;
+            <span class="s0">if </span>(count_left &gt; count_right) {
+                <span class="s0">return </span>left_child;
+            }
+            <span class="s0">return </span>right_child;
+        }
+        <span class="s0">else if </span>(left_child &lt; <span class="s0">this</span>.m_count) {
+            <span class="s0">return </span>left_child;
+        }
+        <span class="s0">else if </span>(right_child &lt; <span class="s0">this</span>.m_count) {
+            <span class="s0">return </span>right_child;
+        }
+        <span class="s0">return </span>-<span class="s3">1</span>;
+    }
+}
+</pre>
+</body>
+</html>
