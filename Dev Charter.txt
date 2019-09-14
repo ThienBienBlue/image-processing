@@ -1,0 +1,1 @@
+Add in a feature to send the image to another person.
