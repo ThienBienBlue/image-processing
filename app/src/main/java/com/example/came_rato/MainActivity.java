@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import android.Manifest;
 import android.app.Activity;
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -207,8 +209,8 @@ public class MainActivity extends AppCompatActivity {
         location.
         */
     {
-        String path = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES).toString();
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                .toString();  // Depreciated in API 29, Android 10.
         OutputStream output_stream = null;
         File file = new File(path + "/cel_image");
         if (!file.exists()) {
@@ -225,6 +227,12 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(getApplicationContext(), "Image written to: "
                 + path + "/cel_image", Toast.LENGTH_SHORT).show();
 
+        // Allow MediaScanner to process the new file.
+        MediaScannerConnection.scanFile(
+                this,
+                new String[] { file.toString() },
+                null,
+                null);
         m_image_uri = Uri.fromFile(file);
     }
 
@@ -232,18 +240,17 @@ public class MainActivity extends AppCompatActivity {
     send_image(View view)
         /* Send the image to someone else. */
     {
-        Toast.makeText(this, "Currently a WIP. API 24 does not " +
-                "allow cross activity sharing of URIs unless more permissions " +
-                "are given.", Toast.LENGTH_LONG).show();
-        /* Does not work due to API 24 having stricter rules for sharing uris cross activities.
+        File file = new File(m_image_uri.getPath());
+        Uri content_uri = FileProvider.getUriForFile(this,
+                "com.mydomain.fileprovider", file);
+
         String mime_type = "image/png";
         ShareCompat.IntentBuilder
                 .from(this)
                 .setType(mime_type)
                 .setChooserTitle(R.string.FAB_action_title)
-                .setStream(m_image_uri)
+                .setStream(content_uri)
                 .startChooser();
-        //*/
     }
 
     @Override
