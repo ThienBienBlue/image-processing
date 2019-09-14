@@ -2,6 +2,7 @@ package com.example.came_rato;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
@@ -38,11 +39,21 @@ import static android.graphics.Color.red;
 
 public class MainActivity extends AppCompatActivity {
 
+    //-----------------
+    // Private Views.
+    //-----------------
+
     ImageView m_picture;
     Button m_button;
+    Uri m_image_uri;
+
     private static final int GALLERY_REQUEST = 69;
     private static final int GALLERY_WRITE = 70;
     int colors[] = {32, 96, 160, 224};
+
+    //----------------
+    // Functions.
+    //----------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +69,18 @@ public class MainActivity extends AppCompatActivity {
                 load_image_from_gallery();
             }
         });
+
+        if (savedInstanceState != null) {
+            m_image_uri = savedInstanceState.getParcelable("IMAGE_URI");
+            m_picture.setImageURI(m_image_uri);
+            findViewById(R.id.FAB_send_image).setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable("IMAGE_URI", m_image_uri);
     }
 
     private void
@@ -201,6 +224,26 @@ public class MainActivity extends AppCompatActivity {
 
         Toast.makeText(getApplicationContext(), "Image written to: "
                 + path + "/cel_image", Toast.LENGTH_SHORT).show();
+
+        m_image_uri = Uri.fromFile(file);
+    }
+
+    public void
+    send_image(View view)
+        /* Send the image to someone else. */
+    {
+        Toast.makeText(this, "Currently a WIP. API 24 does not " +
+                "allow cross activity sharing of URIs unless more permissions " +
+                "are given.", Toast.LENGTH_LONG).show();
+        /* Does not work due to API 24 having stricter rules for sharing uris cross activities.
+        String mime_type = "image/png";
+        ShareCompat.IntentBuilder
+                .from(this)
+                .setType(mime_type)
+                .setChooserTitle(R.string.FAB_action_title)
+                .setStream(m_image_uri)
+                .startChooser();
+        //*/
     }
 
     @Override
@@ -209,7 +252,6 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == Activity.RESULT_OK) {
             switch (requestCode) {
-
                 case GALLERY_REQUEST:
                     if (data != null) {
                         Uri selected_image = data.getData();
@@ -229,6 +271,9 @@ public class MainActivity extends AppCompatActivity {
                             }
                             else {
                                 write_to_memory(bitmap, image_name);
+                                if (m_image_uri != null) {
+                                    findViewById(R.id.FAB_send_image).setVisibility(View.VISIBLE);
+                                }
                             }
 
                             m_picture.setImageBitmap(bitmap);
@@ -237,6 +282,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     }
+                    break;
+                default:
                     break;
             }
         }
@@ -259,5 +306,6 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+
 }
 
