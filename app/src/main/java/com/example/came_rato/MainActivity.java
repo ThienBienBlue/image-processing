@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView m_picture;
     Button m_button;
-    Uri m_image_uri;
+    Uri m_image_uri = null;
 
     private static final int GALLERY_REQUEST = 69;
     private static final int GALLERY_WRITE = 70;
@@ -73,16 +73,21 @@ public class MainActivity extends AppCompatActivity {
         });
 
         if (savedInstanceState != null) {
-            m_image_uri = savedInstanceState.getParcelable("IMAGE_URI");
-            m_picture.setImageURI(m_image_uri);
-            findViewById(R.id.FAB_send_image).setVisibility(View.VISIBLE);
+            Uri uri = savedInstanceState.getParcelable("IMAGE_URI");
+            if (uri != null) {
+                m_image_uri = uri;
+                m_picture.setImageURI(m_image_uri);
+                findViewById(R.id.FAB_send_image).setVisibility(View.VISIBLE);
+            }
         }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelable("IMAGE_URI", m_image_uri);
+        if (m_image_uri != null) {
+            outState.putParcelable("IMAGE_URI", m_image_uri);
+        }
     }
 
     private void
