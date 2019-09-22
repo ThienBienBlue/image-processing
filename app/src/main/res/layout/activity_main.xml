@@ -18,12 +18,14 @@
 
     <Button
         android:id="@+id/load_image_button"
-        android:layout_width="292dp"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:text="@string/button_load_image"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/FAB_send_image"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toEndOf="@+id/border_button" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/FAB_send_image"
@@ -38,5 +40,17 @@
         app:layout_constraintStart_toEndOf="@id/load_image_button"
         app:layout_constraintTop_toTopOf="@+id/load_image_button"
         app:srcCompat="@android:drawable/ic_menu_share" />
+
+    <Button
+        android:id="@+id/border_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:onClick="start_border_activity"
+        android:text="@string/border_activity_button"
+        app:layout_constraintEnd_toStartOf="@+id/load_image_button"
+        app:layout_constraintStart_toStartOf="parent"
+
+        app:layout_constraintTop_toTopOf="@+id/load_image_button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

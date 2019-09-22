@@ -319,5 +319,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void
+    start_border_activity(View view) {
+        Intent intent = new Intent(this, BorderActivity.class);
+        startActivity(intent);
+    }
 }
 

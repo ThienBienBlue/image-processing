@@ -2,4 +2,6 @@
     <string name="app_name">Came_rato</string>
     <string name="button_load_image">Load Image</string>
     <string name="FAB_action_title">Share Image</string>
+    <string name="border_button">Add Border</string>
+    <string name="border_activity_button">Border</string>
 </resources>
