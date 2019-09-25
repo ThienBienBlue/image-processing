@@ -68,65 +68,85 @@ public class BorderMap {
         }
 
         //* "Randomly" create the disjoint sets.
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Queue<Integer> queue = new LinkedList<>();
-                queue.add(cartesian_to_num(x, y));
+        Queue<Integer> primary_queue = new LinkedList<>();
+        primary_queue.add(cartesian_to_num(width / 2, height / 2));
+        while (primary_queue.peek() != null) {
+            Queue<Integer> queue = new LinkedList<>();
+            queue.add(primary_queue.remove());
 
-                while (queue.peek() != null) {
-                    int val = queue.remove();
-                    Coor coor = num_to_cartesian(val);
+            while (queue.peek() != null) {
+                int val = queue.remove();
+                Coor coor = num_to_cartesian(val);
 
-                    //* Depth First search Union.
-                    // Right.
-                    if (coor.x < width - 1) {
-                        HeadNode this_node = find(coor.x, coor.y);
-                        HeadNode neighbor = find(coor.x + 1, coor.y);
-                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
+                //* Depth First search Union.
+                // Right.
+                if (coor.x < width - 1) {
+                    HeadNode this_node = find(coor.x, coor.y);
+                    HeadNode neighbor = find(coor.x + 1, coor.y);
+                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                    if (!this_node.is_equal(neighbor)) {
+                        if (chance > fail_chance) {
                             union(coor.x, coor.y,coor.x + 1, coor.y);
                             queue.add(neighbor.num);
                         }
-                    }
-
-                    // Up.
-                    if (coor.y < height - 1) {
-                        HeadNode this_node = find(coor.x, coor.y);
-                        HeadNode neighbor = find(coor.x, coor.y + 1);
-                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
-                            union(coor.x, coor.y,coor.x,coor.y + 1);
-                            queue.add(neighbor.num);
+                        else {
+                            primary_queue.add(neighbor.num);
                         }
                     }
+                }
 
-                    // Left.
-                    if (coor.x > 0) {
-                        HeadNode this_node = find(coor.x, coor.y);
-                        HeadNode neighbor = find(coor.x - 1, coor.y);
-                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
-                            union(coor.x, coor.y,coor.x - 1,coor.y);
+                // Up.
+                if (coor.y < height - 1) {
+                    HeadNode this_node = find(coor.x, coor.y);
+                    HeadNode neighbor = find(coor.x, coor.y + 1);
+                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                    if (!this_node.is_equal(neighbor)) {
+                        if (chance > fail_chance) {
+                            union(coor.x, coor.y, coor.x, coor.y + 1);
                             queue.add(neighbor.num);
                         }
+                        else {
+                            primary_queue.add(neighbor.num);
+                        }
                     }
+                }
 
-                    // Down.
-                    if (coor.y > 0) {
-                        HeadNode this_node = find(coor.x, coor.y);
-                        HeadNode neighbor = find(coor.x, coor.y - 1);
-                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
-                            union(coor.x, coor.y, coor.x,coor.y - 1);
+                // Left.
+                if (coor.x > 0) {
+                    HeadNode this_node = find(coor.x, coor.y);
+                    HeadNode neighbor = find(coor.x - 1, coor.y);
+                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                    if (!this_node.is_equal(neighbor)) {
+                        if (chance > fail_chance) {
+                            union(coor.x, coor.y,coor.x - 1, coor.y);
                             queue.add(neighbor.num);
+                        }
+                        else {
+                            primary_queue.add(neighbor.num);
+                        }
+                    }
+                }
+
+                // Down.
+                if (coor.y > 0) {
+                    HeadNode this_node = find(coor.x, coor.y);
+                    HeadNode neighbor = find(coor.x, coor.y - 1);
+                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                    if (!this_node.is_equal(neighbor)) {
+                        if (chance > fail_chance) {
+                            union(coor.x, coor.y, coor.x, coor.y - 1);
+                            queue.add(neighbor.num);
+                        }
+                        else {
+                            primary_queue.add(neighbor.num);
                         }
                     }
                 }
