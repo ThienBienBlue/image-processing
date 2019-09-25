@@ -1,17 +1,19 @@
 package com.example.came_rato;
 import java.io.IOError;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BorderMap {
 
     //----------------
-    // Data Members.
+    // Data Members.y
     //----------------
 
     private int width;
     private int height;
-    private int threshold;
+    private double total_size;
     private int[][][] map;  // [x][y][] -> x * height + y, rank, size.
 
     class Coor {
@@ -51,7 +53,7 @@ public class BorderMap {
     BorderMap(int width, int height) {
         this.width = width;
         this.height = height;
-        this.threshold = 10;
+        this.total_size = width * height;
         map = new int[width][height][3];
 
         //* Set up the Disjoint Set data structure.
@@ -68,34 +70,64 @@ public class BorderMap {
         //* "Randomly" create the disjoint sets.
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                Stack<Integer> stack = new Stack<Integer>();
-                stack.push(cartesian_to_num(x, y));
+                Queue<Integer> queue = new LinkedList<>();
+                queue.add(cartesian_to_num(x, y));
 
-                while (!stack.empty()) {
-                    int val = stack.pop();
+                while (queue.peek() != null) {
+                    int val = queue.remove();
                     Coor coor = num_to_cartesian(val);
-                    HeadNode this_head = find(coor.x, coor.y);
 
                     //* Depth First search Union.
                     // Right.
                     if (coor.x < width - 1) {
+                        HeadNode this_node = find(coor.x, coor.y);
                         HeadNode neighbor = find(coor.x + 1, coor.y);
-                        double chance =
+                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
+                            union(coor.x, coor.y,coor.x + 1, coor.y);
+                            queue.add(neighbor.num);
+                        }
                     }
 
                     // Up.
                     if (coor.y < height - 1) {
-
+                        HeadNode this_node = find(coor.x, coor.y);
+                        HeadNode neighbor = find(coor.x, coor.y + 1);
+                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
+                            union(coor.x, coor.y,coor.x,coor.y + 1);
+                            queue.add(neighbor.num);
+                        }
                     }
 
                     // Left.
                     if (coor.x > 0) {
-
+                        HeadNode this_node = find(coor.x, coor.y);
+                        HeadNode neighbor = find(coor.x - 1, coor.y);
+                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
+                            union(coor.x, coor.y,coor.x - 1,coor.y);
+                            queue.add(neighbor.num);
+                        }
                     }
 
                     // Down.
                     if (coor.y > 0) {
-
+                        HeadNode this_node = find(coor.x, coor.y);
+                        HeadNode neighbor = find(coor.x, coor.y - 1);
+                        double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
+                        double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
+                                + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
+                        if (!this_node.is_equal(neighbor) && chance > fail_chance) {
+                            union(coor.x, coor.y, coor.x,coor.y - 1);
+                            queue.add(neighbor.num);
+                        }
                     }
                 }
             }
@@ -104,16 +136,14 @@ public class BorderMap {
 
     private HeadNode
     find(int x, int y) {
-        int head_val = x * height + y;
-        if (map[x][y][0] == head_val) {
-            HeadNode head_node = new HeadNode(head_val, map[x][y][1], map[x][y][2]);
+        if (map[x][y][0] == x * height + y) {
+            HeadNode head_node = new HeadNode(x * height + y, map[x][y][1], map[x][y][2]);
             return head_node;
         }
 
-        HeadNode head_node = find(head_val / height, head_val % height);
+        Coor parent = num_to_cartesian(map[x][y][0]);
+        HeadNode head_node = find(parent.x, parent.y);
         map[x][y][0] = head_node.num;
-        map[x][y][1] = head_node.rank;
-        map[x][y][2] = head_node.size;
         return head_node;
     }
 
@@ -127,12 +157,12 @@ public class BorderMap {
                 map[head2.num / height][head2.num % height][0] = head1.num;
                 map[head1.num / height][head1.num % height][2] += head2.size;
                 if (head1.rank == head2.rank) {
-                    map[head1.num / height][head2.num % height][1]++;
+                    map[head1.num / height][head1.num % height][1]++;
                 }
             }
             else {
                 map[head1.num / height][head1.num % height][0] = head2.num;
-                map[head2.size / height][head2.size % height][2] += head2.size;
+                map[head2.num / height][head2.num % height][2] += head1.size;
             }
         }
     }
