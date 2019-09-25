@@ -106,14 +106,13 @@ public class BorderActivity extends AppCompatActivity {
         int height = bitmap.getHeight();
         BorderMap map = new BorderMap(width, height);
 
-        /*
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 if (map.is_border(x, y)) {
                     bitmap.setPixel(x, y, Color.BLACK);
                 }
             }
-        } */
+        }
 
         return bitmap;
     }
