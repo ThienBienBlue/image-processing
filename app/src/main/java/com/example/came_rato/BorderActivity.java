@@ -19,6 +19,11 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
+import static android.graphics.Color.alpha;
+import static android.graphics.Color.argb;
+import static android.graphics.Color.blue;
+import static android.graphics.Color.green;
+import static android.graphics.Color.red;
 
 public class BorderActivity extends AppCompatActivity {
 
@@ -44,6 +49,7 @@ public class BorderActivity extends AppCompatActivity {
     ImageView m_picture;
     Uri m_image_uri = null;
     public static final int BORDER_READ = 1;
+    int colors[] = {32, 96, 160, 224};
 
     //----------------
     // Functions.
@@ -75,30 +81,8 @@ public class BorderActivity extends AppCompatActivity {
         return image;
     }
 
-    public int
-    min(int a, int b) {
-        if (a < b) {
-            return a;
-        }
-        return b;
-    }
-
-    public int
-    max(int a, int b) {
-        if (a > b) {
-            return a;
-        }
-        return b;
-    }
-
     public Bitmap
-    border_image(Uri image) throws IOException
-        /* Tries to cel shade an image. The cel shading function is dividing by 4 then using the
-        value to index into the colors[] array. Then each pixel will take on the value of the
-        most prominent pixel color, in other words, the color that has obtained a plurality in
-        the 11x11 pixel space around the center pixel.
-        */
-    {
+    border_image(Uri image) throws IOException {
         Bitmap bitmap = getBitmapFromUri(image);
         bitmap = bitmap.copy(ARGB_8888, true);
 
@@ -108,8 +92,41 @@ public class BorderActivity extends AppCompatActivity {
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                if (map.is_border(x, y)) {
-                    bitmap.setPixel(x, y, Color.BLACK);
+                int color = bitmap.getPixel(x, y);
+                int RGB_alpha = colors[alpha(color) / 64];
+                int RGB_red = colors[red(color) / 64];
+                int RGB_green = colors[green(color) / 64];
+                int RGB_blue = colors[blue(color) / 64];
+                color = argb(RGB_alpha, RGB_red, RGB_green, RGB_blue);
+                bitmap.setPixel(x, y, color);
+            }
+        }
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                if (map.is_active_region(x, y)) {
+                    int x_min = x;
+                    int y_min = y;
+                    int x_max;
+                    int y_max;
+
+                    for (x_max = x_min; x_max < width && map.is_same_region(x, y, x_max, y); x_max++) {}
+                    for (y_max = y_min; y_max < height && map.is_same_region(x, y, x, y_max); y_max++) {}
+
+                    ColorHeap color_heap = new ColorHeap((x_max - x_min) * (y_max - y_min));
+                    for (int xx = x_min; xx < x_max; xx++) {
+                        for (int yy = y_min; yy < y_max; yy++) {
+                            color_heap.increment_color(bitmap.getPixel(xx, yy));
+                        }
+                    }
+
+                    int plurality_color = color_heap.get_max();
+                    for (int xx = x_min; xx < x_max; xx++) {
+                        for (int yy = y_min; yy < y_max; yy++) {
+                            bitmap.setPixel(xx, yy, plurality_color);
+                        }
+                    }
+                    map.dull_region(x, y);
                 }
             }
         }

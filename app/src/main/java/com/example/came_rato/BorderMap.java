@@ -16,6 +16,8 @@ public class BorderMap {
     private double total_size;
     private int[][][] map;  // [x][y][] -> x * height + y, rank, size.
 
+    private static final double threshold = 0.0003125;
+
     class Coor {
         int x;
         int y;
@@ -45,6 +47,26 @@ public class BorderMap {
         }
     }
 
+    class Rectangle {
+        int x_min;
+        int y_min;
+        int x_max;
+        int y_max;
+
+        public
+        Rectangle(int x_min, int y_min, int x_max, int y_max) {
+            this.x_min = x_min;
+            this.y_min = y_min;
+            this.x_max = x_max;
+            this.y_max = y_max;
+        }
+
+        public double
+        get_size() {
+            return (x_max - x_min) * (y_max - y_min);
+        }
+    }
+
     //--------------------
     // Member functions.
     //--------------------
@@ -67,87 +89,55 @@ public class BorderMap {
             }
         }
 
-        //* "Randomly" create the disjoint sets.
-        Queue<Integer> primary_queue = new LinkedList<>();
-        primary_queue.add(cartesian_to_num(width / 2, height / 2));
-        while (primary_queue.peek() != null) {
-            Queue<Integer> queue = new LinkedList<>();
-            queue.add(primary_queue.remove());
+        //* Semi-randomly create borders.
+        Stack<Rectangle> stack = new Stack<>();
+        stack.push(new Rectangle(0, 0, width, height));
 
-            while (queue.peek() != null) {
-                int val = queue.remove();
-                Coor coor = num_to_cartesian(val);
+        while (!stack.empty()) {
+            Rectangle curr_region = stack.peek();
+            double curr_size = curr_region.get_size() / total_size;
 
-                //* Depth First search Union.
-                // Right.
-                if (coor.x < width - 1) {
-                    HeadNode this_node = find(coor.x, coor.y);
-                    HeadNode neighbor = find(coor.x + 1, coor.y);
-                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                    if (!this_node.is_equal(neighbor)) {
-                        if (chance > fail_chance) {
-                            union(coor.x, coor.y,coor.x + 1, coor.y);
-                            queue.add(neighbor.num);
-                        }
-                        else {
-                            primary_queue.add(neighbor.num);
-                        }
+            if (curr_size > threshold) {
+                int horizontal_chance = curr_region.y_min - curr_region.y_max;  // Negative by design.
+                int vertical_chance = curr_region.x_max - curr_region.x_min;
+                int cut = ThreadLocalRandom.current().nextInt(horizontal_chance, vertical_chance);
+
+                if (cut <= 0) {  // Cut parallel to width.
+                    int new_y = ThreadLocalRandom.current().nextInt(curr_region.y_min, curr_region.y_max);
+                    new_y += ThreadLocalRandom.current().nextInt(curr_region.y_min, curr_region.y_max);
+                    new_y /= 2;
+
+                    if (new_y != curr_region.y_min && new_y != curr_region.y_max) {
+                        stack.pop();
+                        stack.push(new Rectangle(
+                                curr_region.x_min, new_y, curr_region.x_max, curr_region.y_max));
+                        stack.push(new Rectangle(
+                                curr_region.x_min, curr_region.y_min, curr_region.x_max, new_y));
                     }
                 }
+                else {  // Cut parallel to height.
+                    int new_x = ThreadLocalRandom.current().nextInt(curr_region.x_min, curr_region.x_max);
+                    new_x += ThreadLocalRandom.current().nextInt(curr_region.x_min, curr_region.x_max);
+                    new_x /= 2;
 
-                // Up.
-                if (coor.y < height - 1) {
-                    HeadNode this_node = find(coor.x, coor.y);
-                    HeadNode neighbor = find(coor.x, coor.y + 1);
-                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                    if (!this_node.is_equal(neighbor)) {
-                        if (chance > fail_chance) {
-                            union(coor.x, coor.y, coor.x, coor.y + 1);
-                            queue.add(neighbor.num);
-                        }
-                        else {
-                            primary_queue.add(neighbor.num);
-                        }
+                    if (new_x != curr_region.x_min && new_x != curr_region.x_max) {
+                        stack.pop();
+                        stack.push(new Rectangle(
+                                curr_region.x_min, curr_region.y_min, new_x, curr_region.y_max));
+                        stack.push(new Rectangle(
+                                new_x, curr_region.y_min, curr_region.x_max, curr_region.y_max));
                     }
                 }
-
-                // Left.
-                if (coor.x > 0) {
-                    HeadNode this_node = find(coor.x, coor.y);
-                    HeadNode neighbor = find(coor.x - 1, coor.y);
-                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                    if (!this_node.is_equal(neighbor)) {
-                        if (chance > fail_chance) {
-                            union(coor.x, coor.y,coor.x - 1, coor.y);
-                            queue.add(neighbor.num);
-                        }
-                        else {
-                            primary_queue.add(neighbor.num);
-                        }
+            }
+            else {
+                stack.pop();
+                for (int xx = curr_region.x_min; xx < curr_region.x_max; xx++) {
+                    if (xx < curr_region.x_max - 1) {
+                        union(xx, curr_region.y_min, xx+1, curr_region.y_min);
                     }
-                }
 
-                // Down.
-                if (coor.y > 0) {
-                    HeadNode this_node = find(coor.x, coor.y);
-                    HeadNode neighbor = find(coor.x, coor.y - 1);
-                    double fail_chance = (this_node.size + neighbor.size) / total_size * 50;
-                    double chance = (ThreadLocalRandom.current().nextDouble(0.0, 1.0)
-                            + ThreadLocalRandom.current().nextDouble(0.0, 1.0)) / 2;
-                    if (!this_node.is_equal(neighbor)) {
-                        if (chance > fail_chance) {
-                            union(coor.x, coor.y, coor.x, coor.y - 1);
-                            queue.add(neighbor.num);
-                        }
-                        else {
-                            primary_queue.add(neighbor.num);
-                        }
+                    for (int yy = curr_region.y_min; yy < curr_region.y_max - 1; yy++) {
+                        union(xx, yy, xx, yy+1);
                     }
                 }
             }
@@ -221,6 +211,26 @@ public class BorderMap {
         }
 
         return false;
+    }
+
+    public boolean
+    is_active_region(int x, int y) {
+        HeadNode head = find(x, y);
+        return head.rank >= 0;
+    }
+
+    public void
+    dull_region(int x, int y) {
+        HeadNode head = find(x, y);
+        Coor coor = num_to_cartesian(head.num);
+        map[coor.x][coor.y][1] = -1;
+    }
+
+    public boolean
+    is_same_region(int x1, int y1, int x2, int y2) {
+        HeadNode head1 = find(x1, y1);
+        HeadNode head2 = find(x2, y2);
+        return head1.num == head2.num;
     }
 
     //--------------------
