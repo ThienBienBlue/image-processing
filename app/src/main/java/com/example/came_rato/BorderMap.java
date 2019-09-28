@@ -48,22 +48,38 @@ public class BorderMap {
     }
 
     class Rectangle {
-        int x_min;
-        int y_min;
-        int x_max;
-        int y_max;
+        int min_xy;
+        int max_xy;
 
         public
         Rectangle(int x_min, int y_min, int x_max, int y_max) {
-            this.x_min = x_min;
-            this.y_min = y_min;
-            this.x_max = x_max;
-            this.y_max = y_max;
+            this.min_xy = cartesian_to_num(x_min, y_min);
+            this.max_xy = cartesian_to_num(x_max, y_max);
+        }
+
+        public int
+        get_min_x() {
+            return min_xy / height;
+        }
+
+        public int
+        get_max_x() {
+            return max_xy / height;
+        }
+
+        public int
+        get_min_y() {
+            return min_xy % height;
+        }
+
+        public int
+        get_max_y() {
+            return max_xy % height;
         }
 
         public double
         get_size() {
-            return (x_max - x_min) * (y_max - y_min);
+            return (get_max_x() - get_min_x()) * (get_max_y() - get_min_y());
         }
     }
 
@@ -90,56 +106,79 @@ public class BorderMap {
         }
 
         //* Semi-randomly create borders.
+        random_rectangle_borders();
+    }
+
+    private void
+    random_rectangle_borders() {
         Stack<Rectangle> stack = new Stack<>();
-        stack.push(new Rectangle(0, 0, width, height));
+        stack.push(new Rectangle(0, 0, width - 1, height - 1));
 
         while (!stack.empty()) {
             Rectangle curr_region = stack.peek();
-            double curr_size = curr_region.get_size() / total_size;
+            int x_min = curr_region.get_min_x();
+            int y_min = curr_region.get_min_y();
+            int x_max = curr_region.get_max_x();
+            int y_max = curr_region.get_max_y();
+            double curr_size = curr_region.get_size();
+            curr_size /= total_size;
 
             if (curr_size > threshold) {
-                int horizontal_chance = curr_region.y_min - curr_region.y_max;  // Negative by design.
-                int vertical_chance = curr_region.x_max - curr_region.x_min;
+                int horizontal_chance = y_min - y_max + 1;  // Negative by design.
+                int vertical_chance = x_max - x_min + 1;
                 int cut = ThreadLocalRandom.current().nextInt(horizontal_chance, vertical_chance);
 
                 if (cut <= 0) {  // Cut parallel to width.
-                    int new_y = ThreadLocalRandom.current().nextInt(curr_region.y_min, curr_region.y_max);
-                    new_y += ThreadLocalRandom.current().nextInt(curr_region.y_min, curr_region.y_max);
-                    new_y /= 2;
+                    if (y_min != y_max) {
+                        int new_y = ThreadLocalRandom.current().nextInt(y_min, y_max);
+                        new_y += ThreadLocalRandom.current().nextInt(y_min, y_max);
+                        new_y /= 2;
 
-                    if (new_y != curr_region.y_min && new_y != curr_region.y_max) {
                         stack.pop();
                         stack.push(new Rectangle(
-                                curr_region.x_min, new_y, curr_region.x_max, curr_region.y_max));
+                                x_min, y_min, x_max, new_y));
                         stack.push(new Rectangle(
-                                curr_region.x_min, curr_region.y_min, curr_region.x_max, new_y));
+                                x_min, new_y + 1, x_max, y_max));
+                    }
+                    else if (x_min == x_max) {
+                        stack.pop();
                     }
                 }
                 else {  // Cut parallel to height.
-                    int new_x = ThreadLocalRandom.current().nextInt(curr_region.x_min, curr_region.x_max);
-                    new_x += ThreadLocalRandom.current().nextInt(curr_region.x_min, curr_region.x_max);
-                    new_x /= 2;
+                    if (x_min != x_max) {
+                        int new_x = ThreadLocalRandom.current().nextInt(x_min, x_max);
+                        new_x += ThreadLocalRandom.current().nextInt(x_min, x_max);
+                        new_x /= 2;
 
-                    if (new_x != curr_region.x_min && new_x != curr_region.x_max) {
                         stack.pop();
                         stack.push(new Rectangle(
-                                curr_region.x_min, curr_region.y_min, new_x, curr_region.y_max));
+                                x_min, y_min, new_x, y_max));
                         stack.push(new Rectangle(
-                                new_x, curr_region.y_min, curr_region.x_max, curr_region.y_max));
+                                new_x + 1, y_min, x_max, y_max));
+                    }
+                    else if (y_min == y_max) {
+                        stack.pop();
                     }
                 }
             }
             else {
                 stack.pop();
-                for (int xx = curr_region.x_min; xx < curr_region.x_max; xx++) {
-                    if (xx < curr_region.x_max - 1) {
-                        union(xx, curr_region.y_min, xx+1, curr_region.y_min);
-                    }
+                fill_rectangle(x_min, y_min, x_max, y_max);
+            }
+        }
+    }
 
-                    for (int yy = curr_region.y_min; yy < curr_region.y_max - 1; yy++) {
-                        union(xx, yy, xx, yy+1);
-                    }
-                }
+    private void
+    fill_rectangle(int x_min, int y_min, int x_max, int y_max)
+        /* @x_max and @y_max are both inclusive bounds. */
+    {
+        for (int xx = x_min; xx <= x_max; xx++) {
+            if (xx < x_max) {
+                union(xx, y_min, xx+1, y_min);
+            }
+
+            for (int yy = y_min; yy < y_max; yy++) {
+                union(xx, yy, xx, yy+1);
             }
         }
     }
@@ -244,7 +283,6 @@ public class BorderMap {
 
     Coor
     num_to_cartesian(int num) {
-        Coor coor = new Coor(num / height, num % height);
-        return coor;
+        return new Coor(num / height, num % height);
     }
 }
