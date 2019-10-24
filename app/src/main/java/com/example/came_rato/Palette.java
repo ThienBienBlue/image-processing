@@ -4,8 +4,10 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import static android.graphics.Color.argb;
@@ -49,9 +51,21 @@ Palette {
             return centroid;
         }
 
+        public void
+        set_centroid(Point centroid) {
+            this.centroid = centroid;
+        }
+
         public int
         get_id() {
             return id;
+        }
+
+        public void
+        clear_points()
+            /* Used to delete all pointers to points. */
+        {
+            points.clear();
         }
     }
 
@@ -59,11 +73,13 @@ Palette {
     Point {
         int color;
         int cluster_id;
+        int count;
 
         public
         Point(int color) {
             this.color = color;
             this.cluster_id = 0;
+            this.count = 1;
         }
 
         public double
@@ -81,7 +97,7 @@ Palette {
         }
 
         public void
-        set_cluster(int n) {
+        set_cluster_id(int n) {
             cluster_id = n;
         }
 
@@ -89,11 +105,16 @@ Palette {
         get_cluster_id() {
             return cluster_id;
         }
+
+        public void
+        increment_count() {
+            count++;
+        }
     }
 
     private Bitmap bitmap;
     private static final int CONDENSING_FACTOR = 8;  // Do not deal with 255 different values of
-    // on the RGB scale. 32 different values of RGB.
+        // on the RGB scale. 32 different values of RGB.
     private static final int K_CLUSTERS = 128;
 
     private int MAX_VAL;  // Exclusive value.
@@ -102,8 +123,8 @@ Palette {
     private int width;
     private int height;
 
-    private Set points;
-    private Set clusters;
+    private HashMap<Integer, Point> points;
+    private List clusters;
 
     public void
     Palette(Bitmap bitmap) {
@@ -112,12 +133,14 @@ Palette {
         this.height = bitmap.getHeight();
         this.MAX_VAL = 256 / CONDENSING_FACTOR;
 
-        this.points = new HashSet();
-        this.clusters = new HashSet();
+        this.points = new HashMap<>();
+        this.clusters = new ArrayList();
+
+        init_palette_bitmap();
     }
 
     public void
-    palette_bitmap()
+    init_palette_bitmap()
         /* Start the process of k-means clustering for the bitmap. */
     {
         //* Create all the points on the image.
@@ -126,11 +149,41 @@ Palette {
                 int pixel_color = bitmap.getPixel(x, y);
                 pixel_color = simple_color(pixel_color);
 
-                Point pixel_point = new Point(pixel_color);
-                points.add(pixel_color);
+                if (points.containsKey(pixel_color)) {
+                    points.get(pixel_color).increment_count();
+                }
+                else {
+                    points.put(pixel_color, new Point(pixel_color));
+                }
             }
         }
+
+        //* Create all K clusters.
+        for (int i = 0; i < K_CLUSTERS; i++) {
+            Cluster cluster = new Cluster(i);
+            Point centroid = create_random_point();
+            cluster.set_centroid(centroid);
+            clusters.add(cluster);
+        }
     }
+
+    //--------------------
+    // K Means functions.
+    //--------------------
+
+    public void
+    calculate_clusters()
+        /* Calculate clusters through iteration method. */
+    {
+        boolean finished = false;
+        while (!finished) {
+
+        }
+    }
+
+    //---------------------------
+    // K-means helper functions.
+    //---------------------------
 
     public int
     simple_color(int color)
@@ -144,5 +197,33 @@ Palette {
         int RGB_blue = (blue(color) / CONDENSING_FACTOR) * CONDENSING_FACTOR;
 
         return argb(alpha, RGB_red, RGB_green, RGB_blue);
+    }
+
+    public Point
+    create_random_point()
+        /* Creates a random point with some random val. */
+    {
+        Random r = new Random();
+        int val = r.nextInt(0xffffff);
+        return new Point(val);
+    }
+
+    public List
+    create_random_points(int quantity)
+        /* Create a list of random points. */
+    {
+        List points = new ArrayList(quantity);
+        for (int i = 0; i < quantity; i++) {
+            points.add(create_random_point());
+        }
+        return points;
+    }
+
+    private void
+    clear_clusters() {
+        for (int i = 0; i < K_CLUSTERS; i++) {
+            Cluster c = clusters.get(i);
+            c.clear_points();
+        }
     }
 }
