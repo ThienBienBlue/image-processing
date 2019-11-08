@@ -1,6 +1,8 @@
 package com.example.came_rato;
 
 import android.graphics.Color;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 
 import static android.graphics.Color.alpha;
 import static android.graphics.Color.blue;
@@ -22,20 +24,23 @@ public class ColorHeap {
     }
 
     ColorCount m_color_heap[];
-    int m_hash[][][][];
+    SparseIntArray m_hash;
     int m_count;
     int m_size;
+
+    Palette m_palette;
 
     //-----------------------
     // Heap Implementation.
     //-----------------------
 
     public
-    ColorHeap(int t_size) {
-        this.m_count = 0;
-        this.m_size = min(t_size, 256);
-        this.m_color_heap = new ColorCount[this.m_size];
-        this.m_hash = new int[4][4][4][4];
+    ColorHeap(Palette palette) {
+       this.m_palette = palette;
+       this.m_hash = new SparseIntArray();
+       this.m_size = Palette.K_CLUSTERS;
+       this.m_count = 0;
+       this.m_color_heap = new ColorCount[this.m_size];
     }
 
     public int
