@@ -45,10 +45,13 @@ Palette {
 
     public int
     get_color(int color) {
-        return points.get(color).color;
+        color = simple_color(color);
+        int cluster_id = points.get(color).get_cluster_id();
+        Cluster cluster = (Cluster) clusters.get(cluster_id);
+        return cluster.get_centroid().color;
     }
 
-    public void
+    public
     Palette(Bitmap bitmap) {
         this.bitmap = bitmap;
         this.width = bitmap.getWidth();
@@ -56,7 +59,7 @@ Palette {
         this.MAX_VAL = 256 / CONDENSING_FACTOR;
 
         this.points = new SparseArray<Point>();
-        this.clusters = new ArrayList();
+        this.clusters = new ArrayList(K_CLUSTERS);
 
         init_palette_bitmap();
         calculate_clusters();
@@ -91,7 +94,8 @@ Palette {
             Cluster cluster = new Cluster(i);
             Point centroid = create_random_point();
             cluster.set_centroid(centroid);
-            clusters.add(cluster);
+            clusters.add(i, cluster);
+            //clusters.add(cluster);
         }
     }
 
@@ -174,10 +178,10 @@ Palette {
         /* Copy constructor for the List of centroids. */
     {
         List centroids = new ArrayList(K_CLUSTERS);
-        for (Object c : centroids) {
-            Point centroid = ((Cluster) c).get_centroid();
+        for (int i = 0; i < K_CLUSTERS; i++) {
+            Point centroid = ((Cluster)clusters.get(i)).centroid;
             Point copy = new Point(centroid.color);
-            centroids.add(copy);
+            centroids.add(i, copy);
         }
         return centroids;
     }
@@ -191,7 +195,7 @@ Palette {
             double min_distance = Double.MAX_VALUE;
             int cluster_id = 0;
 
-            for (int j = 0; i < K_CLUSTERS; j++) {
+            for (int j = 0; j < K_CLUSTERS; j++) {
                 Cluster c = (Cluster)clusters.get(j);
                 double distance = Point.calc_distance(p, c.get_centroid());
                 if (distance < min_distance) {

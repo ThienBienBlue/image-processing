@@ -28,15 +28,12 @@ public class ColorHeap {
     int m_count;
     int m_size;
 
-    Palette m_palette;
-
     //-----------------------
     // Heap Implementation.
     //-----------------------
 
     public
-    ColorHeap(Palette palette) {
-       this.m_palette = palette;
+    ColorHeap() {
        this.m_hash = new SparseIntArray();
        this.m_size = Palette.K_CLUSTERS;
        this.m_count = 0;
@@ -106,12 +103,7 @@ public class ColorHeap {
     read_hash(int t_color)
         /* Returns the index of a color in the heap. */
     {
-        int c_alpha = alpha(t_color) / 64;
-        int c_red = red(t_color) / 64;
-        int c_green = green(t_color) / 64;
-        int c_blue = blue(t_color) / 64;
-
-        int index = m_hash[c_alpha][c_red][c_green][c_blue];
+        int index = m_hash.get(t_color);
         if (index < m_count && m_color_heap[index].m_color == t_color) {
             return index;
         }
@@ -119,16 +111,16 @@ public class ColorHeap {
     }
 
     public void
-    write_hash(int t_color, int t_index) {
-        int c_alpha = alpha(t_color) / 64;
-        int c_red = red(t_color) / 64;
-        int c_green = green(t_color) / 64;
-        int c_blue = blue(t_color) / 64;
-        m_hash[c_alpha][c_red][c_green][c_blue] = t_index;
+    write_hash(int t_color, int t_index)
+        /* Given a color, update it's index in the hash. */
+    {
+        m_hash.put(t_color, t_index);
     }
 
     public void
-    swap(int t_a, int t_b) {
+    swap(int t_a, int t_b)
+        /* Swaps the colors on the ColorHeap given the indices. */
+    {
         if (t_a != t_b) {
             swap_index(m_color_heap[t_a].m_color, m_color_heap[t_b].m_color);
 

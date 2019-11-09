@@ -135,18 +135,16 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bitmap = getBitmapFromUri(image);
         bitmap = bitmap.copy(ARGB_8888, true);
 
-        //* Create a bitmap from the original that only uses 256 colors.
+        //* Create a bitmap from the original that only uses 128 colors.
+        Palette palette = new Palette(bitmap);
+
         int height = bitmap.getHeight();
         int width = bitmap.getWidth();
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                int color = bitmap.getPixel(j, i);
-                int RGB_alpha = colors[alpha(color) / 64];
-                int RGB_red = colors[red(color) / 64];
-                int RGB_green = colors[green(color) / 64];
-                int RGB_blue = colors[blue(color) / 64];
-                color = argb(RGB_alpha, RGB_red, RGB_green, RGB_blue);
-                bitmap.setPixel(j, i, color);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int color = bitmap.getPixel(x, y);
+                color = palette.get_color(color);
+                bitmap.setPixel(x, y, color);
             }
         }
 
@@ -156,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
 
         //* Prominence Algorithm with a heap.
         for (int y = 0; y < height; y++) {
-            ColorHeap color_heap = new ColorHeap(121);
+            ColorHeap color_heap = new ColorHeap();
 
             for (int yy = max(0, y - r_height), y_max = min(height, y + r_height + 1);
                  yy < y_max;
